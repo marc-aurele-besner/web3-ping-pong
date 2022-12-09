@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Text, useGLTF, useTexture } from '@react-three/drei'
-import { Physics, useSphere, useBox } from '@react-three/cannon' // usePlane
+import { Physics, useSphere, useBox, usePlane } from '@react-three/cannon'
 import { proxy, useSnapshot } from 'valtio'
 import clamp from 'lodash-es/clamp'
 import { useWeb3React } from '@web3-react/core'
@@ -58,20 +58,20 @@ function Paddle() {
   )
 }
 
-function Ball() {
+function Ball({
+  onDestroy
+}) {
   const map = useTexture(earthImg)
   // eslint-disable-next-line
   const [ref, api] = useSphere(() => ({ mass: 1, args: [0.5], position: [0, 5, 0] }))
-  // usePlane(() => ({
-  //   type: "Static",
-  //   rotation: [-Math.PI / 2, 0, 0],
-  //   position: [0, -10, 0],
-  //   onCollide: () => {
-  //     api.position.set(0, 5, 0)
-  //     api.velocity.set(0, 5, 0)
-  //     state.api.reset()
-  //   },
-  // }))
+  usePlane(() => ({
+    type: "Static",
+    rotation: [-Math.PI / 2, 0, 0],
+    position: [0, -10, 0],
+    onCollide: () => {
+      onDestroy()
+    },
+  }))
 
   return (
     <mesh castShadow ref={ref}>
@@ -102,13 +102,17 @@ export default function App({ ready }) {
 
   const blocksActive = balls.length
 
+  const handleRemoveBall = (blockNumber) => {
+    setBalls(balls.filter((ball) => ball.blockNumber !== blockNumber))
+  }
+
   return (
     <Canvas shadows camera={{ position: [0, 5, 12], fov: 50 }}>
       <color attach="background" args={['#171720']} />
       <ambientLight intensity={0.5} />
       <pointLight position={[-10, -10, -10]} />
       <spotLight position={[10, 10, 10]} angle={0.4} penumbra={1} intensity={1} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} />
-      
+
       <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[-8, 4, 3]} fontSize={1} children={'active balls ' + blocksActive + ''} />
       <Physics
         iterations={20}
@@ -127,7 +131,7 @@ export default function App({ ready }) {
           <planeGeometry args={[1000, 1000]} />
           <meshPhongMaterial color="#374037" />
         </mesh>
-        {ready && active && balls.map((ball) => <Ball key={ball.blockNumber} />)}
+        {ready && active && balls.length > 0 && balls.map((ball) => <Ball key={ball.blockNumber} blockNumber={ball.blockNumber} onDestroy={() => handleRemoveBall(ball.blockNumber)} />)}
         <Paddle />
       </Physics>
     </Canvas>

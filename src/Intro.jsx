@@ -11,7 +11,11 @@ export default function Intro({ children }) {
       {cloneElement(children, { ready: clicked })}
       <div className={`fullscreen bg ready"} ${clicked && 'clicked'}`}>
         <div className="stack">
-          Play Ping-Pong with the blockchain, <br /><br />Connect on a Blockchain with your MetaMask wallet <br />and a new ball will appear each time your wallet detect a new block. <br /><br />
+          Play Ping-Pong with the blockchain, <br />
+          <br />
+          Connect on a Blockchain with your MetaMask wallet <br />
+          and a new ball will appear each time your wallet detect a new block. <br />
+          <br />
           <a
             href="#"
             onClick={async () => {
