@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Text, useGLTF, useTexture } from '@react-three/drei'
 import { Physics, useSphere, useBox, usePlane } from '@react-three/cannon'
@@ -7,6 +7,7 @@ import { proxy, useSnapshot } from 'valtio'
 import clamp from 'lodash-es/clamp'
 import { useWeb3React } from '@web3-react/core'
 
+import useBalls from './states/balls'
 import pingSound from './resources/ping.mp3'
 import earthImg from './resources/cross.jpg'
 
@@ -58,41 +59,47 @@ function Paddle() {
   )
 }
 
-function Ball({ onDestroy }) {
+function Ball({blockNumber}) {
   const map = useTexture(earthImg)
+  const randomHeight = Math.floor(Math.random() * 10) + 1
   // eslint-disable-next-line
-  const [ref, api] = useSphere(() => ({ mass: 1, args: [0.5], position: [0, 5, 0] }))
-  usePlane(() => ({
-    type: 'Static',
-    rotation: [-Math.PI / 2, 0, 0],
-    position: [0, -10, 0],
-    onCollide: () => {
-      onDestroy()
-    }
-  }))
+  const [ref, api] = useSphere(() => ({ mass: 1, args: [0.5], position: [Math.floor(Math.random() * 10) - 5, randomHeight, 0] }))
 
   return (
-    <mesh castShadow ref={ref}>
+    <mesh castShadow ref={ref} key={blockNumber} blockNumber={blockNumber}>
       <sphereGeometry args={[0.5, 64, 64]} />
       <meshStandardMaterial map={map} />
     </mesh>
   )
 }
 
+function Plane() {
+  const removeBall = useBalls((state) => state.removeBall)
+  usePlane(() => ({
+    type: 'Static',
+    rotation: [-Math.PI / 2, 0, 0],
+    position: [0, -10, 0],
+    onCollide: (e) => {
+      console.log('Ball ', e.contact.bi.blockNumber , ' has touched the ground')
+      removeBall(e.contact.bi.blockNumber)
+    }
+  }))
+  
+  return null
+}
+
 export default function App({ ready }) {
   const { active, account, library } = useWeb3React()
-  const [balls, setBalls] = useState([
-    {
-      blockNumber: 0
-    }
-  ])
+  const balls = useBalls((state) => state.balls)
+  const addBall = useBalls((state) => state.addBall)
 
   // Detect metamask
   try {
     const provider = library.getSigner(account).provider
     provider.on('block', (blockNumber) => {
       console.log('Block Number: ', blockNumber)
-      if (balls.find((ball) => ball.blockNumber !== blockNumber)) setBalls([...balls, { blockNumber }])
+      // wait 1 second to add ball
+      addBall(blockNumber)
     })
   } catch (error) {
     console.log('Metamask not detected')
@@ -100,18 +107,20 @@ export default function App({ ready }) {
 
   const blocksActive = balls.filter((ball) => ball.blockNumber !== 0).length
 
-  const handleRemoveBall = (blockNumber) => {
-    setBalls(balls.filter((ball) => ball.blockNumber !== blockNumber))
-  }
+  let ballsList = ''
+  balls.map((ball) => ballsList += 'BlockNumber: ' + ball.blockNumber + '\n')
+
+  // if (pendingBalls.length > 0 && balls.length < 2) addBallFromPending(pendingBalls[0].blockNumber)
 
   return (
-    <Canvas shadows camera={{ position: [0, 5, 12], fov: 50 }}>
+    <Canvas shadows camera={{ position: [0, 5, 12], fov: 75 }}>
       <color attach="background" args={['#171720']} />
       <ambientLight intensity={0.5} />
       <pointLight position={[-10, -10, -10]} />
       <spotLight position={[10, 10, 10]} angle={0.4} penumbra={1} intensity={1} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} />
 
-      <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[-8, 4, 3]} fontSize={1} children={'active balls ' + blocksActive + ''} />
+      <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[-6, 4, 3]} fontSize={0.5} children={'active balls ' + blocksActive + ''} />
+      <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[6, 4, 3]} fontSize={0.5} children={ballsList} />
       <Physics
         iterations={20}
         tolerance={0.0001}
@@ -131,8 +140,8 @@ export default function App({ ready }) {
         </mesh>
         {ready &&
           active &&
-          balls.length > 0 &&
-          balls.filter((ball) => ball.blockNumber !== 0).map((ball) => <Ball key={ball.blockNumber} blockNumber={ball.blockNumber} onDestroy={() => handleRemoveBall(ball.blockNumber)} />)}
+          balls.length > 0 && balls.map((ball) => <Ball key={ball.blockNumber} blockNumber={ball.blockNumber} />)}
+        <Plane />
         <Paddle />
       </Physics>
     </Canvas>
