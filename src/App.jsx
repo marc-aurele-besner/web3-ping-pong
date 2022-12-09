@@ -58,19 +58,17 @@ function Paddle() {
   )
 }
 
-function Ball({
-  onDestroy
-}) {
+function Ball({ onDestroy }) {
   const map = useTexture(earthImg)
   // eslint-disable-next-line
   const [ref, api] = useSphere(() => ({ mass: 1, args: [0.5], position: [0, 5, 0] }))
   usePlane(() => ({
-    type: "Static",
+    type: 'Static',
     rotation: [-Math.PI / 2, 0, 0],
     position: [0, -10, 0],
     onCollide: () => {
       onDestroy()
-    },
+    }
   }))
 
   return (
@@ -100,7 +98,7 @@ export default function App({ ready }) {
     console.log('Metamask not detected')
   }
 
-  const blocksActive = balls.length
+  const blocksActive = balls.filter((ball) => ball.blockNumber !== 0).length
 
   const handleRemoveBall = (blockNumber) => {
     setBalls(balls.filter((ball) => ball.blockNumber !== blockNumber))
@@ -131,7 +129,10 @@ export default function App({ ready }) {
           <planeGeometry args={[1000, 1000]} />
           <meshPhongMaterial color="#374037" />
         </mesh>
-        {ready && active && balls.length > 0 && balls.map((ball) => <Ball key={ball.blockNumber} blockNumber={ball.blockNumber} onDestroy={() => handleRemoveBall(ball.blockNumber)} />)}
+        {ready &&
+          active &&
+          balls.length > 0 &&
+          balls.filter((ball) => ball.blockNumber !== 0).map((ball) => <Ball key={ball.blockNumber} blockNumber={ball.blockNumber} onDestroy={() => handleRemoveBall(ball.blockNumber)} />)}
         <Paddle />
       </Physics>
     </Canvas>
