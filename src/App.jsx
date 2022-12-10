@@ -1,15 +1,15 @@
 import * as THREE from 'three'
 import { useRef } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Text, useGLTF, useTexture } from '@react-three/drei'
-import { Physics, useSphere, useBox, usePlane } from '@react-three/cannon'
+import { Text, useGLTF } from '@react-three/drei'
+import { Physics, useBox } from '@react-three/cannon'
 import { proxy, useSnapshot } from 'valtio'
 import clamp from 'lodash-es/clamp'
 import { useWeb3React } from '@web3-react/core'
 
-import useBalls from './states/balls'
+import { Ball, Plane } from 'components'
+import useBalls from 'states/balls'
 import pingSound from './resources/ping.mp3'
-import earthImg from './resources/cross.jpg'
 
 const ping = new Audio(pingSound)
 const state = proxy({
@@ -25,7 +25,7 @@ const state = proxy({
   }
 })
 
-function Paddle() {
+const Paddle = () => {
   const model = useRef()
   const { count } = useSnapshot(state)
   const { nodes, materials } = useGLTF('/pingpong.glb')
@@ -59,35 +59,6 @@ function Paddle() {
   )
 }
 
-function Ball({blockNumber}) {
-  const map = useTexture(earthImg)
-  const randomHeight = Math.floor(Math.random() * 10) + 1
-  // eslint-disable-next-line
-  const [ref, api] = useSphere(() => ({ mass: 1, args: [0.5], position: [Math.floor(Math.random() * 10) - 5, randomHeight, 0] }))
-
-  return (
-    <mesh castShadow ref={ref} key={blockNumber} blockNumber={blockNumber}>
-      <sphereGeometry args={[0.5, 64, 64]} />
-      <meshStandardMaterial map={map} />
-    </mesh>
-  )
-}
-
-function Plane() {
-  const removeBall = useBalls((state) => state.removeBall)
-  usePlane(() => ({
-    type: 'Static',
-    rotation: [-Math.PI / 2, 0, 0],
-    position: [0, -10, 0],
-    onCollide: (e) => {
-      console.log('Ball ', e.contact.bi.blockNumber , ' has touched the ground')
-      removeBall(e.contact.bi.blockNumber)
-    }
-  }))
-  
-  return null
-}
-
 export default function App({ ready }) {
   const { active, account, library } = useWeb3React()
   const balls = useBalls((state) => state.balls)
@@ -108,7 +79,7 @@ export default function App({ ready }) {
   const blocksActive = balls.filter((ball) => ball.blockNumber !== 0).length
 
   let ballsList = ''
-  balls.map((ball) => ballsList += 'BlockNumber: ' + ball.blockNumber + '\n')
+  balls.map((ball) => (ballsList += 'BlockNumber: ' + ball.blockNumber + '\n'))
 
   // if (pendingBalls.length > 0 && balls.length < 2) addBallFromPending(pendingBalls[0].blockNumber)
 
@@ -120,7 +91,7 @@ export default function App({ ready }) {
       <spotLight position={[10, 10, 10]} angle={0.4} penumbra={1} intensity={1} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} />
 
       <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[-6, 4, 3]} fontSize={0.5} children={'active balls ' + blocksActive + ''} />
-      <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[6, 4, 3]} fontSize={0.5} children={ballsList} />
+      <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[6, 4, 3]} fontSize={0.4} children={ballsList} />
       <Physics
         iterations={20}
         tolerance={0.0001}
@@ -138,9 +109,7 @@ export default function App({ ready }) {
           <planeGeometry args={[1000, 1000]} />
           <meshPhongMaterial color="#374037" />
         </mesh>
-        {ready &&
-          active &&
-          balls.length > 0 && balls.map((ball) => <Ball key={ball.blockNumber} blockNumber={ball.blockNumber} />)}
+        {ready && active && balls.length > 0 && balls.map((ball) => <Ball key={ball.blockNumber} blockNumber={ball.blockNumber} />)}
         <Plane />
         <Paddle />
       </Physics>
