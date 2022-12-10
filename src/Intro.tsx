@@ -1,9 +1,14 @@
+import React from 'react'
 import { cloneElement, useState } from 'react'
 import { useWeb3React } from '@web3-react/core'
 
 import { connectors } from './utils/connectors'
 
-export default function Intro({ children }) {
+interface IntroProps {
+  children: React.ReactElement
+}
+
+const Intro: React.FC<IntroProps> = ({ children }) => {
   const [clicked, setClicked] = useState(false)
   const { active, activate } = useWeb3React()
   return (
@@ -34,3 +39,5 @@ export default function Intro({ children }) {
     </>
   )
 }
+
+export default Intro
