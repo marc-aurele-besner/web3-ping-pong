@@ -1,12 +1,16 @@
 import { Canvas } from '@react-three/fiber'
-import { Text } from '@react-three/drei'
+import { OrbitControls } from '@react-three/drei'
 import { Physics } from '@react-three/cannon'
 import { useWeb3React } from '@web3-react/core'
 
-import { Ball, Paddle, Plane } from 'components'
+import { Ball, Board, Paddle, Plane } from 'components'
 import useBalls from 'states/balls'
 
-export default function App({ ready }) {
+interface AppProps {
+  ready: boolean
+}
+
+const App: React.FC<AppProps> = ({ ready }) => {
   const { active, account, library } = useWeb3React()
   const balls = useBalls((state) => state.balls)
   const addBall = useBalls((state) => state.addBall)
@@ -23,7 +27,7 @@ export default function App({ ready }) {
     console.log('Metamask not detected')
   }
 
-  const blocksActive = balls.filter((ball) => ball.blockNumber !== 0).length
+  const blocksActive = balls.filter((ball) => ball.blockNumber !== '0').length
 
   let ballsList = ''
   balls.map((ball) => (ballsList += 'BlockNumber: ' + ball.blockNumber + '\n'))
@@ -37,8 +41,10 @@ export default function App({ ready }) {
       <pointLight position={[-10, -10, -10]} />
       <spotLight position={[10, 10, 10]} angle={0.4} penumbra={1} intensity={1} castShadow shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} />
 
-      <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[-6, 4, 3]} fontSize={0.5} children={'active balls ' + blocksActive + ''} />
-      <Text anchorX="center" anchorY="middle" rotation={[0, 0, 0]} position={[6, 4, 3]} fontSize={0.4} children={ballsList} />
+      <Board
+        blocksActive={blocksActive}
+        ballsList={ballsList}
+      />
       <Physics
         iterations={20}
         tolerance={0.0001}
@@ -60,6 +66,9 @@ export default function App({ ready }) {
         <Plane />
         <Paddle />
       </Physics>
+      <OrbitControls enableRotate={false} />
     </Canvas>
   )
 }
+
+export default App

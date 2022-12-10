@@ -4,7 +4,7 @@ import { useSphere } from '@react-three/cannon'
 const ballImg = '/textures/cross.jpg'
 
 interface BallPros {
-  blockNumber: number
+  blockNumber: string
 }
 
 const Ball: React.FC<BallPros> = ({ blockNumber }) => {
